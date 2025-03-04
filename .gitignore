@@ -1,0 +1,4 @@
+server/node_modules
+server/dist
+server/speech.mp3
+client/node_modules
