@@ -102,10 +102,15 @@ wss.on("connection", (ws: WebSocket) => {
             //c.send("Echo: "+msg)
         //})
 
-        const data: APIData = JSON.parse(msg.toString())
+        try {
+            const data: APIData = JSON.parse(msg.toString())
 
-        if (data.type == "request_openai") {
-            callOpenAI(data.text)
+            if (data.type == "request_openai") {
+                callOpenAI(data.text)
+            }
+        } catch (error) {
+            //console.error(error)
+            console.log("data invalid type!")
         }
     })
 

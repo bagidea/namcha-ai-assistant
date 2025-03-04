@@ -51,6 +51,7 @@ const Index = () => {
             const speechRecognition: SpeechRecognition = new SpeechRecognition(
                 textarea_ref.current,
                 textareaOutput_ref.current,
+                setIsStarted,
                 setIsConnect,
                 setFacialExpression,
                 setAnimation
@@ -108,26 +109,26 @@ const Index = () => {
 
                     <HStack>
                         <Button
-                            disabled={ isStarted }
+                            disabled={ isStarted || !isConnect }
                             bgColor="green"
                             color="white"
                             onClick={ () => {
                                     if (speechRecognition && !isStarted) {
                                         speechRecognition.start()
-                                        setIsStarted(true)
+                                        //setIsStarted(true)
                                     }
                                 }
                             }
                         >START</Button>
 
                         <Button
-                            disabled={ !isStarted }
+                            disabled={ !isStarted || !isConnect }
                             bgColor="red"
                             color="white"
                             onClick={ () => {
                                     if (speechRecognition && isStarted) {
                                         speechRecognition.stop()
-                                        setIsStarted(false)
+                                        //setIsStarted(false)
                                     }
                                 }
                             }

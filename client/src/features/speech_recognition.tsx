@@ -18,21 +18,25 @@ class SpeechRecognition {
 
     private socket: WebSocket
     private isConnected: boolean = false
+    private setIsStarted: Dispatch<SetStateAction<boolean>>
     private setIsConnected: Dispatch<SetStateAction<boolean>>
     private setFacialExpression: Dispatch<SetStateAction<string>>
     private setAnimation: Dispatch<SetStateAction<string>>
+    private isSent: boolean = false
 
     audioChecked: boolean = true
 
     constructor(
         textarea: HTMLTextAreaElement,
         textareaOutput: HTMLTextAreaElement,
+        setIsStarted: Dispatch<SetStateAction<boolean>>,
         setIsConnected: Dispatch<SetStateAction<boolean>>,
         setFacialExpression: Dispatch<SetStateAction<string>>,
         setAnimation: Dispatch<SetStateAction<string>>
     ) {
         this.textarea = textarea
         this.textareaOutput = textareaOutput
+        this.setIsStarted = setIsStarted
         this.setIsConnected = setIsConnected
         this.setFacialExpression = setFacialExpression
         this.setAnimation = setAnimation
@@ -65,7 +69,7 @@ class SpeechRecognition {
         this.sendTimeOut = setTimeout(() => {
             //console.log("Send to server.")
 
-            if (this.textarea.value != "") {
+            if (this.textarea.value != "" && !this.isSent) {
                 //console.log(this.textarea.value)
 
                 if (this.socket) {
@@ -75,9 +79,14 @@ class SpeechRecognition {
                     }
 
                     this.socket.send(JSON.stringify(data))
+                    this.isSent = true
                 }
 
-                this.textarea.value = ""
+                //this.textarea.value = ""
+
+                this.setFacialExpression("-")
+                this.setAnimation("-")
+                this.textareaOutput.value = "Sending..."
 
                 this.speechRecognition.stop()
             }
@@ -102,12 +111,13 @@ class SpeechRecognition {
 
     private onEnd = () => {
         //this.textarea.value = ""
-        if (this.isStarted) this.speechRecognition.start()
+        if (this.isStarted && !this.isSent) this.speechRecognition.start()
     }
 
     start = () => {
         if (!this.isStarted) this.speechRecognition.start()
         this.isStarted = true
+        this.setIsStarted(this.isStarted)
         this.beforSendTime()
         this.textarea.value = ""
     }
@@ -115,6 +125,7 @@ class SpeechRecognition {
     stop = () => {
         if (this.isStarted) this.speechRecognition.stop()
         this.isStarted = false
+        this.setIsStarted(this.isStarted)
         clearTimeout(this.sendTimeOut)
         this.textarea.value = ""
     }
@@ -161,12 +172,19 @@ class SpeechRecognition {
                 this.setAnimation(json.animation)
                 this.textareaOutput.value = json.text
 
+                this.isSent = false
+
                 if (this.audioChecked) {
-                    const audioBlob = new Blob([Uint8Array.from(atob(json.audio), c => c.charCodeAt(0))], { type: 'audio/mp3' });
-                    const audioUrl = URL.createObjectURL(audioBlob)
+                    const audioBlob: Blob = new Blob([Uint8Array.from(atob(json.audio), c => c.charCodeAt(0))], { type: 'audio/mp3' });
+                    const audioUrl: string = URL.createObjectURL(audioBlob)
 
                     const audio: HTMLAudioElement = new Audio(audioUrl)
                     audio.play()
+                }
+
+                if (this.isStarted && !this.isSent) {
+                    this.textarea.value = ""
+                    this.speechRecognition.start()
                 }
             }
 
@@ -174,7 +192,10 @@ class SpeechRecognition {
                 console.log("WebSocket closed.")
 
                 this.isConnected = false
+                this.isSent = false
                 this.setIsConnected(false)
+
+                this.stop()
             }
 
             this.socket.onerror = (e: Event) => {
